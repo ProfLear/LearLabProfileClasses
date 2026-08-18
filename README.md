@@ -79,7 +79,7 @@ Marimo and Molab natively support inline script metadata. Add this block at the 
 ```python
 # /// script
 # dependencies = [
-#   "learlab-profile-classes @ git+https://github.com/benjaminlear/LearLabProfileClasses.git"
+#   "learlab-profile-classes @ git+https://github.com/ProfLear/LearLabProfileClasses.git"
 # ]
 # ///
 ```
@@ -95,7 +95,7 @@ import subprocess
 
 subprocess.check_call([
     sys.executable, "-m", "pip", "install", 
-    "git+https://github.com/benjaminlear/LearLabProfileClasses.git"
+    "git+https://github.com/ProfLear/LearLabProfileClasses.git"
 ])
 ```
 
