@@ -101,6 +101,27 @@ subprocess.check_call([
 
 Once executed, you can import and use the library in any subsequent cells.
 
+### Verification / Testing in Molab
+To verify the installation in Molab, you can use the following cell code to download the test data from GitHub, initialize the sample, and plot the surface topography:
+
+```python
+import os
+import urllib.request
+import learlab_profile_classes as pc
+
+# 1. Fetch test data from GitHub if not already present
+test_file = "testdata.xyz"
+if not os.path.exists(test_file):
+    url = f"https://raw.githubusercontent.com/ProfLear/LearLabProfileClasses/main/testdata/{test_file}"
+    urllib.request.urlretrieve(url, test_file)
+
+# 2. Parse sample
+sample = pc.makeSample(test_file, instrument="zygos")
+
+# 3. Plot surface (show=False prevents duplicate plot rendering in notebooks)
+sample.raw.plot(show=False)
+```
+
 ---
 
 ## Quickstart Guide
