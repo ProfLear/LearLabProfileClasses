@@ -40,7 +40,7 @@ import numpy as np
 import learlab_profile_classes as pc
 
 #%%
-testData = "../testdata/082924_04_2.75x_1x_100_02.xyz"
+testData = "testdata/082924_04_2.75x_1x_100_02.xyz"
 # testData = "/Users/benjaminlear/Downloads/260728_PDMS-CB_A_I0.3_S7_P7_HDR.xyz"
 
 #%% 1 Create a sample object from data

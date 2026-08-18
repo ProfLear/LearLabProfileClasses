@@ -15,7 +15,24 @@ def _():
 
 @app.cell
 def _(pc):
-    sample = pc.makeSample(file = "testdata.xyz", instrument = "zygos")
+    import os
+    import urllib.request
+
+    test_file = "testdata.xyz"
+    if not os.path.exists(test_file):
+        print(f"'{test_file}' not found locally. Downloading from GitHub...")
+        url = "https://raw.githubusercontent.com/ProfLear/LearLabProfileClasses/main/testdata/testdata.xyz"
+        try:
+            urllib.request.urlretrieve(url, test_file)
+            print("Download complete.")
+        except Exception as e:
+            print(f"Error downloading test data: {e}")
+    return (test_file,)
+
+
+@app.cell
+def _(pc, test_file):
+    sample = pc.makeSample(file = test_file, instrument = "zygos")
     return (sample,)
 
 
