@@ -1,0 +1,29 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "learlab-profile-classes"
+version = "0.1.0"
+description = "A dataclass-based profilometry analyzer for Zygo and Bryan instruments"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [
+    { name = "Benjamin Lear", email = "ben.lear@example.com" }
+]
+dependencies = [
+    "numpy>=1.22.0",
+    "scipy>=1.8.0",
+    "plotly>=5.0.0",
+    "kaleido>=0.2.1",
+    "marimo>=0.1.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/learlab_profile_classes"]
