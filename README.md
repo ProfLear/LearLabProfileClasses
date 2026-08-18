@@ -54,23 +54,52 @@ Designed for surface analysis workflows (e.g., Zygo optical interferometers and 
 
 ## Installation & Setup
 
-### Prerequisites
-* Python 3.9+
-* Required packages: `numpy`, `scipy`, `plotly`
+### Local Installation
 
-### Installation
-Clone the repository and install dependencies using `pip` or `uv`:
+You can install the package locally from GitHub using `pip` or `uv`:
 
 ```bash
-git clone https://github.com/ProfLear/Photothermal.git
-cd Photothermal/zygoprocessing/dataClassApproach
-pip install numpy scipy plotly
+pip install git+https://github.com/benjaminlear/LearLabProfileClasses.git
 ```
 
-Or using `uv`:
+Or clone the repository and run:
 ```bash
 uv sync
 ```
+
+---
+
+## Loading in Molab (Cloud Marimo Notebook)
+
+To use this library inside a cloud-hosted **Molab** environment, you have two options:
+
+### Option 1: PEP 723 Script Metadata (Recommended)
+Marimo and Molab natively support inline script metadata. Add this block at the very top of your `.py` notebook file:
+
+```python
+# /// script
+# dependencies = [
+#   "learlab-profile-classes @ git+https://github.com/benjaminlear/LearLabProfileClasses.git"
+# ]
+# ///
+```
+
+When Molab runs your notebook, it will automatically download and install the package from GitHub before loading the cells.
+
+### Option 2: Inline Notebook Cell Installation
+If you are already inside an active Molab cloud session and want to install the package on-the-fly, create a code cell at the very top of the notebook and run:
+
+```python
+import sys
+import subprocess
+
+subprocess.check_call([
+    sys.executable, "-m", "pip", "install", 
+    "git+https://github.com/benjaminlear/LearLabProfileClasses.git"
+])
+```
+
+Once executed, you can import and use the library in any subsequent cells.
 
 ---
 
@@ -80,7 +109,7 @@ uv sync
 Use `makeSample()` to parse an instrument file:
 
 ```python
-import profilometryClasses as pc
+import learlab_profile_classes as pc
 
 # Load a Zygo optical profilometer file
 sample = pc.makeSample("path/to/measurement.xyz", instrument="zygos")
@@ -170,14 +199,19 @@ sample.raw.plot(max_size_mb=None, show=False)
 
 ## File Structure
 
-| File | Description |
+| File / Path | Description |
 | :--- | :--- |
-| `profilometryClasses.py` | Core classes: `Sample`, `ArealData`, `ArealProcess`, `ProfileData`, `ArealArray`, and `makeSample`. |
-| `arealTools.py` | Mathematical algorithms: NaN gap-filling, bivariate splines, grid rasterization, and dynamic downsampling. |
-| `zygosTools.py` | Parser for Zygo optical profilometer `.xyz` export files. |
-| `bryanTools.py` | Parser for tabular profilometer `.txt`/`.xyz` files. |
-| `demonstration.py` | Executable walkthrough demonstrating standard workflow patterns. |
-| `sharedTools.py` | Re-exports common utilities for backward compatibility. |
+| `src/learlab_profile_classes/` | Root package folder. |
+| `  ├── __init__.py` | Package API entry point. |
+| `  ├── profilometry_classes.py` | Core classes: `Sample`, `ArealData`, `ArealProcess`, `ProfileData`, `ArealArray`, and `makeSample`. |
+| `  ├── areal_tools.py` | Mathematical algorithms: NaN gap-filling, spline decomposition, and dynamic downsampling. |
+| `  ├── zygos_tools.py` | Parser for Zygo optical profilometer `.xyz` export files. |
+| `  ├── bryan_tools.py` | Parser for tabular profilometer `.txt`/`.xyz` files. |
+| `  └── shared_tools.py` | Re-exports common utilities for backward compatibility. |
+| `demonstration.py` | Local executable walkthrough demonstrating package patterns. |
+| `marimo_profiles.py` | Local Marimo notebook demonstration. |
+| `prototypes/` | Directory containing prototype files (`justBryans.py`, etc.). |
+| `pyproject.toml` | Modern Hatchling build system package definition. |
 
 ---
 
