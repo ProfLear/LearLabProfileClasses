@@ -87,16 +87,26 @@ Marimo and Molab natively support inline script metadata. Add this block at the 
 When Molab runs your notebook, it will automatically download and install the package from GitHub before loading the cells.
 
 ### Option 2: Inline Notebook Cell Installation
-If you are already inside an active Molab cloud session and want to install the package on-the-fly, create a code cell at the very top of the notebook and run:
+If you are already inside an active Molab cloud session and want to install the package on-the-fly, create a code cell at the very top of the notebook and run (uses `uv` for speed, falling back to `pip` if needed):
 
 ```python
-import sys
 import subprocess
 
-subprocess.check_call([
-    sys.executable, "-m", "pip", "install", 
-    "git+https://github.com/ProfLear/LearLabProfileClasses.git"
-])
+try:
+    # Recommended: Install using uv (very fast)
+    subprocess.check_call([
+        "uv", "pip", "install", 
+        "git+https://github.com/ProfLear/LearLabProfileClasses.git"
+    ])
+    print("Successfully installed using uv!")
+except FileNotFoundError:
+    # Fallback to standard pip if uv is not in PATH
+    import sys
+    subprocess.check_call([
+        sys.executable, "-m", "pip", "install", 
+        "git+https://github.com/ProfLear/LearLabProfileClasses.git"
+    ])
+    print("Successfully installed using pip!")
 ```
 
 Once executed, you can import and use the library in any subsequent cells.
