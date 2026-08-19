@@ -359,11 +359,23 @@ class ArealStats:
         z_data = self.data_ref.zs.data
         valid_z = z_data[~np.isnan(z_data)]
 
-        fig = go.Figure(data=[go.Histogram(x=valid_z, nbinsx=100, name="Heights")])
+        # Pre-calculate histogram bins in Python using numpy
+        # This reduces 1,000,000 raw values to 100 values, saving megabytes of payload
+        counts, bin_edges = np.histogram(valid_z, bins=100)
+        bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
+
+        fig = go.Figure(data=[go.Bar(
+            x=bin_centers,
+            y=counts,
+            width=bin_edges[1] - bin_edges[0],
+            name="Heights"
+        )])
+        
         fig.update_layout(
             title="Surface Height Distribution",
             xaxis_title="Height (µm)",
             yaxis_title="Count",
+            bargap=0,  # Removes space between bars so it looks like a histogram
             template="plotly_white"
         )
         if show:
