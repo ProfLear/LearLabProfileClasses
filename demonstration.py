@@ -49,8 +49,10 @@ testSample = pc.makeSample(file=testData, instrument="zygos")
 #%% 2 Plot what the raw data looks like (automatically downsampled if > 1MB for notebook)
 testSample.raw.plot()
 
-#%% 3 Get roughness
-testSample.raw.getArealRoughness()
+#%% 3 Detrend planar tilt and get roughness stats
+testSample.raw.remove_planar_tilt(name="leveled")
+testSample.raw.leveled.residual.stats.print()
+testSample.raw.leveled.residual.stats.plot_histogram(show=False)
 
 #%% 4 Decompose into spline and residual
 testSample.raw.fitRectbiSpline(name="first_spline", s_scale=1.0)

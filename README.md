@@ -46,7 +46,7 @@ Designed for surface analysis workflows (e.g., Zygo optical interferometers and 
 ```
 
 1. **`Sample`**: The top-level container for a physical measurement. Holds metadata (`date`, `file`, `instrument`, `xy_scale`, `mask`) and the initial `raw` data.
-2. **`ArealData`**: Represents a 2D surface height map (`zs: ArealArray`). Computes surface parameters (`getArealRoughness()`) and spawns new processing steps.
+2. **`ArealData`**: Represents a 2D surface height map (`zs: ArealArray`). Computes automatic surface statistics (`stats: ArealStats`) on creation and spawns new processing steps.
 3. **`ArealProcess`**: The transformation node. Stores the operation `.details`, the low-frequency fitted component (`.result`), and the high-frequency residual (`.residual`).
 4. **`ProfileData`**: Container for 1D cross-sectional profiles and 1D profile metrics ($R_a$).
 
@@ -128,8 +128,12 @@ if not os.path.exists(test_file):
 # 2. Parse sample
 sample = pc.makeSample(test_file, instrument="zygos")
 
-# 3. Plot surface (show=False prevents duplicate plot rendering in notebooks)
-sample.raw.plot(show=False)
+# 3. Detrend planar tilt and show stats
+sample.raw.remove_planar_tilt(name="leveled")
+sample.raw.leveled.residual.stats.print()
+
+# 4. Plot height distribution histogram (show=False prevents duplicate plots in notebook cells)
+sample.raw.leveled.residual.stats.plot_histogram(show=False)
 ```
 
 ---
@@ -161,14 +165,23 @@ sample.raw.render(xscale=1.0, yscale=1.0, zscale=10.0, zmode="relative")
 ```
 
 ### 3. Calculate Surface Roughness Parameters
-Performs least-squares planar tilt removal and computes $S_q$ (RMS roughness), skewness, and kurtosis:
+To compute roughness parameters, first perform a planar tilt removal (detrending). This produces a new leveling node in the provenance chain:
 
 ```python
-sq = sample.raw.getArealRoughness()
+# 1. Perform planar tilt removal (creates sample.raw.leveled)
+sample.raw.remove_planar_tilt(name="leveled")
 
-print(f"RMS Roughness (Sq): {sample.raw.rms_roughness:.4f} µm")
-print(f"Skewness (Ssk):    {sample.raw.skew:.4f}")
-print(f"Kurtosis (Sku):    {sample.raw.kurtosis:.4f}")
+# 2. Access the stats of the leveled surface (ArealStats object)
+stats = sample.raw.leveled.residual.stats
+
+# 3. Print the formatted report
+stats.print()
+
+# Or access specific metrics (including Peak-to-Valley Sz):
+print(f"RMS Roughness (Sq): {stats.rms_roughness:.4f} µm")
+print(f"Peak-to-Valley (Sz): {stats.peak_to_valley:.4f} µm")
+print(f"Skewness (Ssk):    {stats.skew:.4f}")
+print(f"Kurtosis (Sku):    {stats.kurtosis:.4f}")
 ```
 
 ### 4. Decompose Surface (Spline Smoothing & Residual)
@@ -185,8 +198,11 @@ process.plot()
 form_surface = sample.raw.first_spline.result
 roughness_surface = sample.raw.first_spline.residual
 
-# Calculate roughness on the residual component
-roughness_surface.getArealRoughness()
+# Access stats of the residual component directly (automatically computed!)
+roughness_surface.stats.print()
+
+# Plot height distribution histogram
+roughness_surface.stats.plot_histogram(show=False)
 ```
 
 ### 5. Inspect the Transformation History

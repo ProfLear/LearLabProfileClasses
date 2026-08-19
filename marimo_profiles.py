@@ -6,52 +6,78 @@ app = marimo.App(width="medium", app_title="Zygos Processing")
 
 @app.cell
 def _():
-    import marimo as mo
-    import numpy as np
+    import subprocess
+
+    try:
+        # Recommended: Install using uv (very fast)
+        subprocess.check_call([
+            "uv", "pip", "install", 
+            "git+https://github.com/ProfLear/LearLabProfileClasses.git"
+        ])
+        print("Successfully installed using uv!")
+    except FileNotFoundError:
+        # Fallback to standard pip if uv is not in PATH
+        import sys
+        subprocess.check_call([
+            sys.executable, "-m", "pip", "install", 
+            "git+https://github.com/ProfLear/LearLabProfileClasses.git"
+        ])
+        print("Successfully installed using pip!")
+
+    import os
+    import urllib.request
     import learlab_profile_classes as pc
 
-    return (pc,)
+    
+
+    return os, pc, urllib
 
 
 @app.cell
-def _(pc):
-    import os
-    import urllib.request
-
+def _(os, urllib):
+    # 1. Fetch test data from GitHub if not already present
     test_file = "testdata.xyz"
     if not os.path.exists(test_file):
-        print(f"'{test_file}' not found locally. Downloading from GitHub...")
-        url = "https://raw.githubusercontent.com/ProfLear/LearLabProfileClasses/main/testdata/testdata.xyz"
-        try:
-            urllib.request.urlretrieve(url, test_file)
-            print("Download complete.")
-        except Exception as e:
-            print(f"Error downloading test data: {e}")
+        url = f"https://raw.githubusercontent.com/ProfLear/LearLabProfileClasses/main/testdata/{test_file}"
+        urllib.request.urlretrieve(url, test_file)
     return (test_file,)
 
 
 @app.cell
 def _(pc, test_file):
-    sample = pc.makeSample(file = test_file, instrument = "zygos")
+    # 2. Parse sample
+    sample = pc.makeSample(test_file, instrument="zygos")
     return (sample,)
 
 
 @app.cell
 def _(sample):
-    sample.raw.plot()
+    # 3. Plot surface (show=False prevents duplicate plot rendering in notebooks)
+    sample.raw.averaged.result.plot(show=False)
     return
 
 
 @app.cell
 def _(sample):
-    sample.raw.getArealRoughness()
-
+    sample.raw.averaged.result.fitRectbiSpline(name = "formSpline")
     return
 
 
 @app.cell
 def _(sample):
-    sample.raw.skew
+    sample.raw.averaged.result.formSpline.plot(show = False)
+    return
+
+
+@app.cell
+def _(sample):
+    sample.raw.averaged.result.formSpline.residual.fitRectbiSpline(name = "waveSpline").plot(show=False)
+    return
+
+
+@app.cell
+def _(sample):
+    sample.raw.averaged.result.formSpline.residual.stats.print()
     return
 
 

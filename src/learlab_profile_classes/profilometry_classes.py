@@ -305,11 +305,79 @@ class AngularRoughness:
 
 
 @dataclass
+class ArealStats:
+    rms_roughness: float      # Sq (RMS Roughness)
+    skew: float               # Ssk (Skewness)
+    kurtosis: float           # Sku (Kurtosis)
+    mean: float               # Mean height
+    peak_to_valley: float     # Sz (Max peak to min valley height)
+    data_ref: object = field(repr=False) # Reference back to the parent ArealData
+
+    def __init__(self, areal_data: "ArealData"):
+        z_data = areal_data.zs.data
+        mask = ~np.isnan(z_data)
+        valid_z = z_data[mask]
+        self.data_ref = areal_data
+
+        if valid_z.size == 0:
+            self.rms_roughness = 0.0
+            self.skew = 0.0
+            self.kurtosis = 0.0
+            self.mean = 0.0
+            self.peak_to_valley = 0.0
+            return
+
+        self.mean = float(np.mean(valid_z))
+        
+        # Center data around mean for standard roughness calculations
+        centered_z = valid_z - self.mean
+        self.rms_roughness = float(np.sqrt(np.mean(centered_z ** 2)))
+        
+        # Calculate skewness and kurtosis
+        self.skew = float(skew(valid_z, nan_policy='omit'))
+        self.kurtosis = float(kurtosis(valid_z, nan_policy='omit'))
+
+        # Peak-to-Valley (Sz) is the absolute range between max and min height
+        z_min = float(np.nanmin(z_data))
+        z_max = float(np.nanmax(z_data))
+        self.peak_to_valley = z_max - z_min
+
+    def print(self):
+        """Prints a clean, formatted metrology report."""
+        print("┌────────────────────────────────────────┐")
+        print("│       Areal Surface Statistics         │")
+        print("├────────────────────────────────────────┤")
+        print(f"│ Sq (RMS Roughness):  {self.rms_roughness:8.4f} µm  │")
+        print(f"│ Ssk (Skewness):      {self.skew:8.4f}     │")
+        print(f"│ Sku (Kurtosis):      {self.kurtosis:8.4f}     │")
+        print(f"│ Sz (Peak-to-Valley): {self.peak_to_valley:8.4f} µm  │")
+        print("└────────────────────────────────────────┘")
+
+    def plot_histogram(self, show: bool = True):
+        """Generates and returns a Plotly figure of the height distribution."""
+        import plotly.graph_objects as go
+        z_data = self.data_ref.zs.data
+        valid_z = z_data[~np.isnan(z_data)]
+
+        fig = go.Figure(data=[go.Histogram(x=valid_z, nbinsx=100, name="Heights")])
+        fig.update_layout(
+            title="Surface Height Distribution",
+            xaxis_title="Height (µm)",
+            yaxis_title="Count",
+            template="plotly_white"
+        )
+        if show:
+            fig.show()
+        return fig
+
+
+@dataclass
 class ArealData:
     zs: ArealArray
-    rms_roughness: Optional[float] = None
-    skew: Optional[float] = None
-    kurtosis: Optional[float] = None
+    stats: ArealStats = field(init=False)
+
+    def __post_init__(self):
+        self.stats = ArealStats(self)
 
     def fitRectbiSpline(self, name: str = "rectbi_spline", s_scale: float = 1.0) -> "ArealProcess":
         """
@@ -331,52 +399,45 @@ class ArealData:
         setattr(self, name, process)
         return process
 
-    def getArealRoughness(self, correction: str = "linear", mask: Optional[np.ndarray] = None) -> float:
+    def remove_planar_tilt(self, name: str = "leveled") -> "ArealProcess":
         """
-        Calculates areal RMS roughness (Sq), skewness (Ssk), and kurtosis (Sku)
-        after planar tilt removal.
+        Fits a plane (Z = aX + bY + c) to the valid points and subtracts it.
+        Decomposes the surface into a fitted plane (result) and residual (leveled).
         """
         z_data = np.asarray(self.zs.data, dtype=float)
-
-        if mask is None:
-            mask = ~np.isnan(z_data)
-        elif mask.dtype != bool:
-            mask = mask.astype(bool)
-
-        if z_data.shape != mask.shape:
-            raise ValueError("Shape mismatch between z_data and mask.")
-
+        mask = ~np.isnan(z_data)
+        
         rows, cols = z_data.shape
         x_coords = np.arange(cols, dtype=float)
         y_coords = np.arange(rows, dtype=float)
         X, Y = np.meshgrid(x_coords, y_coords)
-
+        
         X_valid = X[mask]
         Y_valid = Y[mask]
         Z_valid = z_data[mask]
-
+        
         if Z_valid.size < 3:
             raise ValueError(f"Need at least 3 valid data points to fit a plane, found {Z_valid.size}.")
-
-        if correction == "linear":
-            A = np.column_stack([X_valid, Y_valid, np.ones_like(X_valid)])
-            coeffs, _, _, _ = np.linalg.lstsq(A, Z_valid, rcond=None)
-            a, b, c = coeffs
-            z_fit = a * X + b * Y + c
-            z_corrected = z_data - z_fit
-        else:
-            z_corrected = z_data - np.nanmean(Z_valid)
-
-        z_corrected[~mask] = np.nan
-        valid_corrected = z_corrected[mask]
-
-        current_rms = float(np.sqrt(np.mean(valid_corrected ** 2)))
-        self.rms_roughness = current_rms
-        self.skew = float(skew(valid_corrected, nan_policy='omit'))
-        self.kurtosis = float(kurtosis(valid_corrected, nan_policy='omit'))
-
-        print(f"Calculated RMS Roughness (Sq): {current_rms:.4f} \u03bcm")
-        return current_rms
+            
+        A = np.column_stack([X_valid, Y_valid, np.ones_like(X_valid)])
+        coeffs, _, _, _ = np.linalg.lstsq(A, Z_valid, rcond=None)
+        a, b, c = coeffs
+        
+        plane_fit = a * X + b * Y + c
+        z_corrected = z_data - plane_fit
+        
+        result_data = ArealData(zs=ArealArray(plane_fit, parent=self))
+        residual_data = ArealData(zs=ArealArray(z_corrected, parent=self))
+        
+        process = ArealProcess(
+            details="Planar tilt removal (Z = aX + bY + c)",
+            result=result_data,
+            residual=residual_data,
+            parent=self
+        )
+        
+        setattr(self, name, process)
+        return process
 
     def plot(self, max_size_mb: float = 1.0, show: bool = True):
         return self.zs.plot(max_size_mb=max_size_mb, show=show)
