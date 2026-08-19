@@ -120,7 +120,8 @@ class ArealArray:
             autosize=False,
             width=600,
             height=600,
-            margin=dict(l=40, r=40, b=40, t=60)
+            margin=dict(l=40, r=40, b=40, t=60),
+            dragmode="turntable"
         )
         if show:
             fig.show()
@@ -212,6 +213,7 @@ class ArealArray:
             width=600,
             height=600,
             margin=dict(l=0, r=0, b=0, t=0),
+            dragmode="turntable",
             scene=dict(
                 aspectmode='manual',
                 aspectratio=dict(
@@ -469,7 +471,8 @@ class ArealProcess:
             autosize=False,
             width=900,
             height=500,
-            margin=dict(l=40, r=40, b=40, t=60)
+            margin=dict(l=40, r=40, b=40, t=60),
+            dragmode="turntable"
         )
         if show:
             fig.show()
