@@ -353,15 +353,15 @@ class ArealStats:
         print(f"│ Sz (Peak-to-Valley): {self.peak_to_valley:8.4f} µm  │")
         print("└────────────────────────────────────────┘")
 
-    def plot_histogram(self, show: bool = True):
+    def plot_histogram(self, bins="fd", show: bool = True):
         """Generates and returns a Plotly figure of the height distribution."""
         import plotly.graph_objects as go
         z_data = self.data_ref.zs.data
         valid_z = z_data[~np.isnan(z_data)]
 
         # Pre-calculate histogram bins in Python using numpy
-        # This reduces 1,000,000 raw values to 100 values, saving megabytes of payload
-        counts, bin_edges = np.histogram(valid_z, bins=100)
+        # Default: Freedman-Diaconis ('fd') rule, which dynamically calculates optimal bins
+        counts, bin_edges = np.histogram(valid_z, bins=bins)
         bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
 
         fig = go.Figure(data=[go.Bar(
